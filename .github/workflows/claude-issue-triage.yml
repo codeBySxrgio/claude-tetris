@@ -1,0 +1,79 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  triage:
+    if: github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Issue Triage
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowed-tools Bash(gh issue *),Bash(gh label *),Bash(gh api *),Bash(git log)'
+          prompt: |
+            You are a triage assistant for the GitHub repository ${{ github.repository }}.
+            A new issue event has been triggered (action: ${{ github.event.action }}) on issue #${{ github.event.issue.number }}.
+
+            Follow these steps in order:
+
+            1. Read the issue:
+               gh issue view ${{ github.event.issue.number }} --repo ${{ github.repository }}
+
+            2. List existing labels:
+               gh label list --repo ${{ github.repository }}
+
+            3. Choose 1-4 labels that best describe the issue. Use existing labels when possible.
+               If a clearly-needed label is missing from the list, create it first using:
+               gh label create "<name>" --color "<hex>" --description "<short desc>" --repo ${{ github.repository }}
+               Standard labels to create if absent: bug (#d73a4a), enhancement (#a2eeef),
+               question (#d876e3), documentation (#0075ca), performance (#e4e669),
+               ui (#bfd4f2), good-first-issue (#7057ff).
+
+            4. Apply the chosen labels:
+               gh issue edit ${{ github.event.issue.number }} --add-label "<label1>,<label2>,..." --repo ${{ github.repository }}
+
+            5. Check whether a triage comment from Claude already exists on this issue:
+               gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments \
+                 --jq '.[] | select(.body | startswith("<!-- claude-triage -->")) | .id'
+               - If a comment ID is returned, update it:
+                 gh api --method PATCH repos/${{ github.repository }}/issues/comments/<comment_id> \
+                   -f body="<new body>"
+               - If no comment exists, create one:
+                 gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "<body>"
+
+            The comment body MUST start with the hidden marker `<!-- claude-triage -->` (first line),
+            then a blank line, then the following sections in Markdown:
+
+            ## 🔍 Issue Triage
+
+            **Summary**
+            One or two sentences describing what the reporter is experiencing or requesting.
+
+            **Likely area / root cause**
+            Identify which part of the codebase is most likely involved and why.
+            Reference specific functions or files where relevant (use `code spans`).
+
+            **Affected files (best guess)**
+            A bullet list of files most likely needing changes (e.g. `game.js`, `index.html`, `style.css`).
+
+            **Suggested next steps**
+            Numbered list of concrete implementation steps a developer could follow to address this issue.
+
+            ---
+            *Automated triage by Claude — review before acting.*
+
+            Write the comment in English. Be concise but specific. Do not modify any source code. Do not open PRs.
