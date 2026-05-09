@@ -39,6 +39,22 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
+const themeSwitch = document.getElementById('theme-switch');
+
+function applyTheme(light) {
+  document.documentElement.dataset.theme = light ? 'light' : 'dark';
+  localStorage.setItem('tetris-theme', light ? 'light' : 'dark');
+}
+
+themeSwitch.addEventListener('change', () => applyTheme(themeSwitch.checked));
+
+const savedTheme = localStorage.getItem('tetris-theme');
+if (savedTheme === 'light') {
+  themeSwitch.checked = true;
+  applyTheme(true);
+} else {
+  applyTheme(false);
+}
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 
@@ -169,7 +185,7 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
