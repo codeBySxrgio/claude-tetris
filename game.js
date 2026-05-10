@@ -317,4 +317,73 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+// --- Responsive scaling ---
+const wrapper = document.querySelector('.wrapper');
+const NATURAL_W = 480; // board(300) + gap(20) + panel(160)
+const NATURAL_H = 680; // header(~50) + gap(16) + board(600) + buffer
+
+function resizeGame() {
+  const isMobile = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  const touchH = isMobile ? 116 : 0;
+  document.body.style.paddingBottom = touchH ? touchH + 'px' : '';
+  const scale = Math.min(1,
+    window.innerWidth / NATURAL_W,
+    (window.innerHeight - touchH) / NATURAL_H
+  );
+  wrapper.style.zoom = scale;
+}
+
+window.addEventListener('resize', resizeGame);
+window.addEventListener('orientationchange', () => setTimeout(resizeGame, 150));
+resizeGame();
+
+// --- Touch button helpers ---
+function holdBtn(id, action) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  let timer = null;
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); action(); timer = setInterval(action, 130); });
+  const stop = () => clearInterval(timer);
+  btn.addEventListener('pointerup', stop);
+  btn.addEventListener('pointercancel', stop);
+  btn.addEventListener('pointerleave', stop);
+}
+
+function tapBtn(id, action) {
+  const btn = document.getElementById(id);
+  if (btn) btn.addEventListener('pointerdown', e => { e.preventDefault(); action(); });
+}
+
+holdBtn('btn-left',  () => { if (paused || gameOver) return; if (!collide(current.shape, current.x - 1, current.y)) { current.x--; updateHUD(); } });
+holdBtn('btn-right', () => { if (paused || gameOver) return; if (!collide(current.shape, current.x + 1, current.y)) { current.x++; updateHUD(); } });
+holdBtn('btn-down',  () => { if (paused || gameOver) return; softDrop(); });
+tapBtn('btn-rotate', () => { if (paused || gameOver) return; tryRotate(); updateHUD(); });
+tapBtn('btn-drop',   () => { if (paused || gameOver) return; hardDrop(); updateHUD(); });
+tapBtn('btn-pause',  () => togglePause());
+
+// --- Swipe gestures on canvas ---
+let swipeX = 0, swipeY = 0;
+
+canvas.addEventListener('touchstart', e => {
+  swipeX = e.touches[0].clientX;
+  swipeY = e.touches[0].clientY;
+}, { passive: true });
+
+canvas.addEventListener('touchend', e => {
+  if (paused || gameOver) return;
+  const dx = e.changedTouches[0].clientX - swipeX;
+  const dy = e.changedTouches[0].clientY - swipeY;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  if (adx < 10 && ady < 10) {
+    tryRotate();
+  } else if (adx > ady) {
+    if (dx > 0) { if (!collide(current.shape, current.x + 1, current.y)) current.x++; }
+    else        { if (!collide(current.shape, current.x - 1, current.y)) current.x--; }
+  } else {
+    if (dy > 0) softDrop();
+    else hardDrop();
+  }
+  updateHUD();
+}, { passive: true });
+
 init();
