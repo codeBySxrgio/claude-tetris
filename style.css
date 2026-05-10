@@ -61,6 +61,7 @@ body {
   min-height: 100vh;
   user-select: none;
   transition: background 0.3s, color 0.3s;
+  overflow-x: hidden;
 }
 
 .wrapper {
@@ -286,4 +287,51 @@ kbd {
 
 #restart-btn:hover {
   background: var(--btn-hover);
+}
+
+/* ---- Touch controls (mobile) ---- */
+.touch-controls {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 16px 14px;
+  background: var(--bg);
+  border-top: 1px solid var(--canvas-border);
+  z-index: 100;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .touch-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 8px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+}
+
+.touch-btn {
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
+  border-radius: 10px;
+  color: var(--kbd-text);
+  font-size: 22px;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  transition: background 0.1s, color 0.1s, border-color 0.3s;
+}
+
+.touch-btn:active {
+  background: var(--toggle-thumb);
+  color: var(--btn-text);
 }
