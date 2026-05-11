@@ -13,6 +13,11 @@ const COLORS = [
   '#e57373', // Z - red
   '#90caf9', // J - pale blue
   '#ffb74d', // L - orange
+  '#f06292', // 8  + plus    — rosa
+  '#4db6ac', // 9  U         — verde-azulado
+  '#7986cb', // 10 Y         — índigo claro
+  '#fff176', // 11 single    — amarillo (recompensa)
+  '#bdbdbd', // 12 3x3 hueca — gris (reto)
 ];
 
 const PIECES = [
@@ -24,9 +29,20 @@ const PIECES = [
   [[5,5,0],[0,5,5],[0,0,0]],                  // Z
   [[6,0,0],[6,6,6],[0,0,0]],                  // J
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
+  [[0,8,0],[8,8,8],[0,8,0]],                  // 8: + plus
+  [[9,0,9],[9,9,9]],                          // 9: U
+  [[0,10],[10,10],[0,10],[0,10]],             // 10: Y
+  [[11]],                                     // 11: single 1×1 (recompensa)
+  [[12,12,12],[12,0,12],[12,12,12]],          // 12: 3×3 hueca (reto)
 ];
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
+
+const PENTOMINO_TYPES = [8, 9, 10];
+const PENTOMINO_PROB  = 0.05;
+const HOLLOW_PROB     = 0.04;
+const SINGLE_TYPE     = 11;
+const HOLLOW_TYPE     = 12;
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -56,16 +72,25 @@ if (savedTheme === 'light') {
   applyTheme(false);
 }
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, pendingPieces;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
 }
 
-function randomPiece() {
-  const type = Math.floor(Math.random() * 7) + 1;
+function pieceFromType(type) {
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+}
+
+function randomPiece() {
+  if (pendingPieces.length) return pieceFromType(pendingPieces.shift());
+  const r = Math.random();
+  if (r < HOLLOW_PROB) return pieceFromType(HOLLOW_TYPE);
+  if (r < HOLLOW_PROB + PENTOMINO_PROB) {
+    return pieceFromType(PENTOMINO_TYPES[Math.floor(Math.random() * PENTOMINO_TYPES.length)]);
+  }
+  return pieceFromType(Math.floor(Math.random() * 7) + 1);
 }
 
 function collide(shape, ox, oy) {
@@ -124,6 +149,7 @@ function clearLines() {
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    if (cleared === 4) pendingPieces.push(SINGLE_TYPE);
     updateHUD();
   }
 }
@@ -282,6 +308,7 @@ function init() {
   level = 1;
   paused = false;
   gameOver = false;
+  pendingPieces = [];
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
