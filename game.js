@@ -155,6 +155,7 @@ function lockPiece() {
   merge();
   clearLines();
   spawn();
+  if (gameOver) return;
 }
 
 function spawn() {
@@ -257,6 +258,7 @@ function togglePause() {
 }
 
 function loop(ts) {
+  if (gameOver || paused) return;
   const dt = ts - lastTime;
   lastTime = ts;
   dropAccum += dt;
@@ -266,6 +268,7 @@ function loop(ts) {
       current.y++;
     } else {
       lockPiece();
+      if (gameOver) return;
     }
   }
   draw();
