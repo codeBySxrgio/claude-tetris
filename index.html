@@ -3,79 +3,82 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tetris</title>
+  <title>Para ti, mi amor 💖</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="wrapper">
-    <header class="game-header">
-      <div class="logo">TETRIS</div>
-      <label class="theme-toggle" title="Cambiar tema claro/oscuro">
-        <span class="icon-moon">🌙</span>
-        <input type="checkbox" id="theme-switch" />
-        <span class="toggle-track">
-          <span class="toggle-thumb"></span>
-        </span>
-        <span class="icon-sun">☀</span>
-      </label>
-    </header>
 
-    <div class="game-area">
-      <div class="game-container">
-        <canvas id="board" width="300" height="600"></canvas>
+  <!-- Corazones de fondo -->
+  <div class="hearts-bg" aria-hidden="true">
+    <span>💕</span><span>🌸</span><span>💜</span><span>✨</span><span>💕</span>
+    <span>🌷</span><span>💗</span><span>⭐</span><span>💕</span><span>🌸</span>
+    <span>💜</span><span>✨</span><span>💗</span><span>🌷</span><span>💕</span>
+  </div>
 
-        <aside class="panel">
-          <div class="panel-section">
-            <span class="label">SCORE</span>
-            <span class="value" id="score">0</span>
-          </div>
-          <div class="panel-section">
-            <span class="label">LINES</span>
-            <span class="value" id="lines">0</span>
-          </div>
-          <div class="panel-section">
-            <span class="label">LEVEL</span>
-            <span class="value" id="level">1</span>
-          </div>
+  <!-- Capa de mensajes flotantes -->
+  <div id="floating-layer" aria-hidden="true"></div>
 
-          <div class="panel-section">
-            <span class="label">NEXT</span>
-            <canvas id="next-canvas" width="120" height="120"></canvas>
-          </div>
-
-          <div class="panel-section controls">
-            <span class="label">CONTROLS</span>
-            <ul>
-              <li><kbd>←</kbd><kbd>→</kbd> mover</li>
-              <li><kbd>↑</kbd> rotar</li>
-              <li><kbd>↓</kbd> bajar</li>
-              <li><kbd>Space</kbd> caída</li>
-              <li><kbd>P</kbd> pausa</li>
-            </ul>
-          </div>
-        </aside>
-      </div>
-
-      <div id="overlay" class="overlay hidden">
-        <div class="overlay-box">
-          <p id="overlay-title">GAME OVER</p>
-          <p id="overlay-score"></p>
-          <button id="restart-btn">Reiniciar</button>
-        </div>
-      </div>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <p class="hero-eyebrow">✨ Hoy fue un gran día ✨</p>
+      <h1 class="hero-title">Para ti,<br>mi amor 💖</h1>
+      <p class="hero-sub">Felicitaciones por tu exposición de hoy</p>
+      <div class="scroll-hint">↓ desliza ↓</div>
     </div>
-  </div>
+  </section>
 
-  <!-- Touch controls for mobile -->
-  <div class="touch-controls" id="touch-controls">
-    <button class="touch-btn" id="btn-left"   aria-label="Izquierda">◀</button>
-    <button class="touch-btn" id="btn-rotate" aria-label="Rotar">↻</button>
-    <button class="touch-btn" id="btn-right"  aria-label="Derecha">▶</button>
-    <button class="touch-btn" id="btn-pause"  aria-label="Pausa">⏸</button>
-    <button class="touch-btn" id="btn-down"   aria-label="Bajar">▼</button>
-    <button class="touch-btn" id="btn-drop"   aria-label="Caída">⬇</button>
-  </div>
+  <!-- CARTA + IMÁGENES ALREDEDOR -->
+  <section class="section carta-section">
+    <div class="carta-wrap">
 
-  <script src="game.js"></script>
+      <!-- Polaroids alrededor -->
+      <div class="polaroid float-1" style="--rot: -4deg">
+        <img src="images/image.png" alt="" />
+      </div>
+      <div class="polaroid float-2" style="--rot: 3deg">
+        <img src="images/image_one.png" alt="" />
+      </div>
+      <div class="polaroid float-3" style="--rot: -3deg">
+        <img src="images/image_two.png" alt="" />
+      </div>
+      <div class="polaroid float-4" style="--rot: 4deg">
+        <img src="images/image_three.png" alt="" />
+      </div>
+      <div class="polaroid float-5" style="--rot: -2deg">
+        <img src="images/image_four.png" alt="" />
+      </div>
+
+      <!-- Carta -->
+      <div class="carta">
+        <div class="carta-deco">💌</div>
+        <p class="carta-text">
+          Mi amor, felicitaciones, me siento muy orgulloso de ti y de lo que conseguiste hoy.
+          Sé que tenías nervios y habías pensado muchos escenarios, pero al final lo hiciste bien.
+          Me alegra mucho y me siento afortunado de que seas mi novia.
+          Eres muy suficiente, muy inteligente, y te elijo y te elegiría siempre.
+          Amo lo que eres, amo cómo piensas, amo que seas mi niña, todo.
+          Siempre confié en ti.
+          Quisiera estar ahí cerca, darte muchos besitos, abrazos y hacerte feliz,
+          pero aunque no pueda, creo que esto te sacará una linda sonrisa.
+          Te adoro, princesita de mi vidaaa 💕
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CIERRE -->
+  <section class="section cierre-section">
+    <div class="cierre">
+      <p class="cierre-emoji">💕✨💕</p>
+      <p class="cierre-firma">Te adoro mi Otaku jajaj</p>
+    </div>
+  </section>
+
+  <script src="script.js"></script>
 </body>
 </html>
