@@ -1,419 +1,373 @@
 'use strict';
 
-const COLS = 10;
-const ROWS = 20;
-const BLOCK = 30;
+/* ============================================================
+   CANVAS FX — Partículas de fondo
+   ============================================================ */
+const fx   = document.getElementById('fx');
+const fxCx = fx.getContext('2d');
 
-const COLORS = [
-  null,
-  '#4dd0e1', // I - cyan
-  '#ffd54f', // O - yellow
-  '#ba68c8', // T - purple
-  '#81c784', // S - green
-  '#e57373', // Z - red
-  '#90caf9', // J - pale blue
-  '#ffb74d', // L - orange
-  '#f06292', // 8  + plus    — rosa
-  '#4db6ac', // 9  U         — verde-azulado
-  '#7986cb', // 10 Y         — índigo claro
-  '#fff176', // 11 single    — amarillo (recompensa)
-  '#bdbdbd', // 12 3x3 hueca — gris (reto)
-];
-
-const PIECES = [
-  null,
-  [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], // I
-  [[2,2],[2,2]],                               // O
-  [[0,3,0],[3,3,3],[0,0,0]],                  // T
-  [[0,4,4],[4,4,0],[0,0,0]],                  // S
-  [[5,5,0],[0,5,5],[0,0,0]],                  // Z
-  [[6,0,0],[6,6,6],[0,0,0]],                  // J
-  [[0,0,7],[7,7,7],[0,0,0]],                  // L
-  [[0,8,0],[8,8,8],[0,8,0]],                  // 8: + plus
-  [[9,0,9],[9,9,9]],                          // 9: U
-  [[0,10],[10,10],[0,10],[0,10]],             // 10: Y
-  [[11]],                                     // 11: single 1×1 (recompensa)
-  [[12,12,12],[12,0,12],[12,12,12]],          // 12: 3×3 hueca (reto)
-];
-
-const LINE_SCORES = [0, 100, 300, 500, 800];
-
-const PENTOMINO_TYPES = [8, 9, 10];
-const PENTOMINO_PROB  = 0.05;
-const HOLLOW_PROB     = 0.04;
-const SINGLE_TYPE     = 11;
-const HOLLOW_TYPE     = 12;
-
-const canvas = document.getElementById('board');
-const ctx = canvas.getContext('2d');
-const nextCanvas = document.getElementById('next-canvas');
-const nextCtx = nextCanvas.getContext('2d');
-const scoreEl = document.getElementById('score');
-const linesEl = document.getElementById('lines');
-const levelEl = document.getElementById('level');
-const overlay = document.getElementById('overlay');
-const overlayTitle = document.getElementById('overlay-title');
-const overlayScore = document.getElementById('overlay-score');
-const restartBtn = document.getElementById('restart-btn');
-const themeSwitch = document.getElementById('theme-switch');
-
-function applyTheme(light) {
-  document.documentElement.dataset.theme = light ? 'light' : 'dark';
-  localStorage.setItem('tetris-theme', light ? 'light' : 'dark');
+function resizeFx() {
+  fx.width  = window.innerWidth;
+  fx.height = window.innerHeight;
 }
+window.addEventListener('resize', resizeFx);
+resizeFx();
 
-themeSwitch.addEventListener('change', () => applyTheme(themeSwitch.checked));
+/* ------ Paleta festiva ------ */
+const PALETTE = ['#ff6b9d','#ffd93d','#6bcb77','#4d96ff','#ff9a00','#c77dff','#ff4da6','#00d4ff'];
 
-const savedTheme = localStorage.getItem('tetris-theme');
-if (savedTheme === 'light') {
-  themeSwitch.checked = true;
-  applyTheme(true);
-} else {
-  applyTheme(false);
-}
+/* ============================================================
+   Confeti
+   ============================================================ */
+const confettiList = [];
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, pendingPieces;
-
-function createBoard() {
-  return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
-}
-
-function pieceFromType(type) {
-  const shape = PIECES[type].map(row => [...row]);
-  return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
-}
-
-function randomPiece() {
-  if (pendingPieces.length) return pieceFromType(pendingPieces.shift());
-  const r = Math.random();
-  if (r < HOLLOW_PROB) return pieceFromType(HOLLOW_TYPE);
-  if (r < HOLLOW_PROB + PENTOMINO_PROB) {
-    return pieceFromType(PENTOMINO_TYPES[Math.floor(Math.random() * PENTOMINO_TYPES.length)]);
+function spawnConfetti(n) {
+  for (let i = 0; i < n; i++) {
+    confettiList.push({
+      x:  Math.random() * fx.width,
+      y:  -10 - Math.random() * fx.height * 0.3,
+      vx: (Math.random() - 0.5) * 3,
+      vy: 2 + Math.random() * 3,
+      w:  6 + Math.random() * 6,
+      h:  4 + Math.random() * 4,
+      angle: Math.random() * Math.PI * 2,
+      spin:  (Math.random() - 0.5) * 0.2,
+      color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+      alpha: 0.85 + Math.random() * 0.15,
+      life:  1,
+    });
   }
-  return pieceFromType(Math.floor(Math.random() * 7) + 1);
 }
 
-function collide(shape, ox, oy) {
-  for (let r = 0; r < shape.length; r++) {
-    for (let c = 0; c < shape[r].length; c++) {
-      if (!shape[r][c]) continue;
-      const nx = ox + c;
-      const ny = oy + r;
-      if (nx < 0 || nx >= COLS || ny >= ROWS) return true;
-      if (ny >= 0 && board[ny][nx]) return true;
+function tickConfetti() {
+  for (let i = confettiList.length - 1; i >= 0; i--) {
+    const c = confettiList[i];
+    c.x     += c.vx;
+    c.y     += c.vy;
+    c.angle += c.spin;
+    c.vx    += (Math.random() - 0.5) * 0.1;
+    if (c.y > fx.height + 20) confettiList.splice(i, 1);
+  }
+}
+
+function drawConfetti() {
+  confettiList.forEach(c => {
+    fxCx.save();
+    fxCx.globalAlpha = c.alpha;
+    fxCx.translate(c.x, c.y);
+    fxCx.rotate(c.angle);
+    fxCx.fillStyle = c.color;
+    fxCx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+    fxCx.restore();
+  });
+}
+
+/* ============================================================
+   Corazones
+   ============================================================ */
+const hearts = [];
+
+function spawnHeart(x, y, burst) {
+  const n = burst ? 10 : 1;
+  for (let i = 0; i < n; i++) {
+    hearts.push({
+      x:     x ?? Math.random() * fx.width,
+      y:     y ?? fx.height + 20,
+      vx:    (Math.random() - 0.5) * (burst ? 4 : 1.5),
+      vy:    -(1.5 + Math.random() * 2.5),
+      size:  14 + Math.random() * 20,
+      alpha: 0.7 + Math.random() * 0.3,
+      life:  1,
+    });
+  }
+}
+
+function drawHeart(ctx, x, y, size) {
+  ctx.beginPath();
+  ctx.moveTo(x, y + size * 0.3);
+  ctx.bezierCurveTo(x, y, x - size * 0.5, y, x - size * 0.5, y + size * 0.3);
+  ctx.bezierCurveTo(x - size * 0.5, y + size * 0.65, x, y + size * 0.9, x, y + size);
+  ctx.bezierCurveTo(x, y + size * 0.9, x + size * 0.5, y + size * 0.65, x + size * 0.5, y + size * 0.3);
+  ctx.bezierCurveTo(x + size * 0.5, y, x, y, x, y + size * 0.3);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function tickHearts() {
+  for (let i = hearts.length - 1; i >= 0; i--) {
+    const h = hearts[i];
+    h.x    += h.vx;
+    h.y    += h.vy;
+    h.life -= 0.008;
+    h.alpha = h.life * 0.9;
+    if (h.life <= 0 || h.y < -40) hearts.splice(i, 1);
+  }
+}
+
+function drawHearts() {
+  hearts.forEach(h => {
+    fxCx.save();
+    fxCx.globalAlpha = h.alpha;
+    fxCx.fillStyle = '#ff6b9d';
+    drawHeart(fxCx, h.x - h.size / 2, h.y - h.size / 2, h.size);
+    fxCx.restore();
+  });
+}
+
+/* ============================================================
+   Globos
+   ============================================================ */
+const balloons = [];
+
+function spawnBalloon() {
+  balloons.push({
+    x:     30 + Math.random() * (fx.width - 60),
+    y:     fx.height + 80,
+    vy:    -(0.6 + Math.random() * 0.8),
+    vx:    (Math.random() - 0.5) * 0.4,
+    sway:  Math.random() * Math.PI * 2,
+    size:  24 + Math.random() * 20,
+    color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+    alpha: 0.75 + Math.random() * 0.2,
+  });
+}
+
+function tickBalloons() {
+  for (let i = balloons.length - 1; i >= 0; i--) {
+    const b = balloons[i];
+    b.sway += 0.03;
+    b.x    += b.vx + Math.sin(b.sway) * 0.3;
+    b.y    += b.vy;
+    if (b.y < -100) balloons.splice(i, 1);
+  }
+}
+
+function drawBalloons() {
+  balloons.forEach(b => {
+    fxCx.save();
+    fxCx.globalAlpha = b.alpha;
+    // cuerpo
+    fxCx.beginPath();
+    fxCx.ellipse(b.x, b.y, b.size * 0.72, b.size, 0, 0, Math.PI * 2);
+    fxCx.fillStyle = b.color;
+    fxCx.fill();
+    // brillo
+    fxCx.beginPath();
+    fxCx.ellipse(b.x - b.size * 0.2, b.y - b.size * 0.3, b.size * 0.2, b.size * 0.3, -0.4, 0, Math.PI * 2);
+    fxCx.fillStyle = 'rgba(255,255,255,0.35)';
+    fxCx.fill();
+    // hilo
+    fxCx.beginPath();
+    fxCx.moveTo(b.x, b.y + b.size);
+    fxCx.quadraticCurveTo(b.x + 8, b.y + b.size + 20, b.x, b.y + b.size + 40);
+    fxCx.strokeStyle = b.color;
+    fxCx.lineWidth = 1;
+    fxCx.globalAlpha = b.alpha * 0.6;
+    fxCx.stroke();
+    fxCx.restore();
+  });
+}
+
+/* ============================================================
+   Fuegos artificiales
+   ============================================================ */
+const rockets  = [];
+const sparkles = [];
+
+function launchRocket(forced) {
+  const x = 60 + Math.random() * (fx.width - 120);
+  const targetY = 60 + Math.random() * (fx.height * 0.45);
+  rockets.push({
+    x,
+    y: fx.height,
+    targetY,
+    vy: -10 - Math.random() * 6,
+    color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+    trail: [],
+  });
+}
+
+function explode(x, y, color) {
+  const n = 60 + Math.floor(Math.random() * 40);
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i) / n + (Math.random() - 0.5) * 0.4;
+    const speed = 2 + Math.random() * 5;
+    sparkles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      alpha: 1,
+      color,
+      size: 2 + Math.random() * 2,
+    });
+  }
+}
+
+function tickRockets() {
+  for (let i = rockets.length - 1; i >= 0; i--) {
+    const r = rockets[i];
+    r.trail.push({ x: r.x, y: r.y });
+    if (r.trail.length > 8) r.trail.shift();
+    r.y += r.vy;
+    r.vy *= 0.97;
+    if (r.y <= r.targetY || r.vy > -0.5) {
+      explode(r.x, r.y, r.color);
+      rockets.splice(i, 1);
     }
   }
-  return false;
 }
 
-function rotateCW(shape) {
-  const rows = shape.length, cols = shape[0].length;
-  const result = Array.from({ length: cols }, () => new Array(rows).fill(0));
-  for (let r = 0; r < rows; r++)
-    for (let c = 0; c < cols; c++)
-      result[c][rows - 1 - r] = shape[r][c];
-  return result;
-}
-
-function tryRotate() {
-  const rotated = rotateCW(current.shape);
-  const kicks = [0, -1, 1, -2, 2];
-  for (const kick of kicks) {
-    if (!collide(rotated, current.x + kick, current.y)) {
-      current.shape = rotated;
-      current.x += kick;
-      return;
-    }
+function tickSparkles() {
+  for (let i = sparkles.length - 1; i >= 0; i--) {
+    const s = sparkles[i];
+    s.x     += s.vx;
+    s.y     += s.vy;
+    s.vy    += 0.1;  // gravity
+    s.vx    *= 0.98;
+    s.alpha -= 0.018;
+    if (s.alpha <= 0) sparkles.splice(i, 1);
   }
 }
 
-function merge() {
-  for (let r = 0; r < current.shape.length; r++)
-    for (let c = 0; c < current.shape[r].length; c++)
-      if (current.shape[r][c])
-        board[current.y + r][current.x + c] = current.shape[r][c];
+function drawRockets() {
+  rockets.forEach(r => {
+    // estela
+    r.trail.forEach((pt, idx) => {
+      fxCx.beginPath();
+      fxCx.arc(pt.x, pt.y, 2, 0, Math.PI * 2);
+      fxCx.fillStyle = r.color;
+      fxCx.globalAlpha = (idx / r.trail.length) * 0.5;
+      fxCx.fill();
+    });
+    // punta
+    fxCx.beginPath();
+    fxCx.arc(r.x, r.y, 3, 0, Math.PI * 2);
+    fxCx.fillStyle = '#fff';
+    fxCx.globalAlpha = 1;
+    fxCx.fill();
+  });
+  fxCx.globalAlpha = 1;
 }
 
-function clearLines() {
-  let cleared = 0;
-  for (let r = ROWS - 1; r >= 0; r--) {
-    if (board[r].every(v => v !== 0)) {
-      board.splice(r, 1);
-      board.unshift(new Array(COLS).fill(0));
-      cleared++;
-      r++;
-    }
-  }
-  if (cleared) {
-    lines += cleared;
-    score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.floor(lines / 10) + 1;
-    dropInterval = Math.max(100, 1000 - (level - 1) * 90);
-    if (cleared === 4) pendingPieces.push(SINGLE_TYPE);
-    updateHUD();
-  }
+function drawSparkles() {
+  sparkles.forEach(s => {
+    fxCx.save();
+    fxCx.globalAlpha = Math.max(0, s.alpha);
+    fxCx.beginPath();
+    fxCx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+    fxCx.fillStyle = s.color;
+    fxCx.shadowBlur = 6;
+    fxCx.shadowColor = s.color;
+    fxCx.fill();
+    fxCx.restore();
+  });
 }
 
-function ghostY() {
-  let gy = current.y;
-  while (!collide(current.shape, current.x, gy + 1)) gy++;
-  return gy;
-}
+/* ============================================================
+   LOOP PRINCIPAL
+   ============================================================ */
+let frame = 0;
+let blownOut = false;
 
-function hardDrop() {
-  const gy = ghostY();
-  score += (gy - current.y) * 2;
-  current.y = gy;
-  lockPiece();
-}
+function loop() {
+  fxCx.clearRect(0, 0, fx.width, fx.height);
 
-function softDrop() {
-  if (!collide(current.shape, current.x, current.y + 1)) {
-    current.y++;
-    score += 1;
-    updateHUD();
-  } else {
-    lockPiece();
-  }
-}
+  frame++;
 
-function lockPiece() {
-  merge();
-  clearLines();
-  spawn();
-  if (gameOver) return;
-}
+  // Confeti continuo suave
+  if (frame % 4 === 0 && confettiList.length < 120) spawnConfetti(3);
+  // Más confeti tras soplar
+  if (blownOut && frame % 2 === 0 && confettiList.length < 350) spawnConfetti(6);
 
-function spawn() {
-  current = next;
-  next = randomPiece();
-  if (collide(current.shape, current.x, current.y)) {
-    endGame();
-  }
-  drawNext();
-}
-
-function updateHUD() {
-  scoreEl.textContent = score.toLocaleString();
-  linesEl.textContent = lines;
-  levelEl.textContent = level;
-}
-
-function drawBlock(context, x, y, colorIndex, size, alpha) {
-  if (!colorIndex) return;
-  const color = COLORS[colorIndex];
-  context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
-  context.globalAlpha = 1;
-}
-
-function drawGrid() {
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
-  ctx.lineWidth = 0.5;
-  for (let c = 1; c < COLS; c++) {
-    ctx.beginPath();
-    ctx.moveTo(c * BLOCK, 0);
-    ctx.lineTo(c * BLOCK, ROWS * BLOCK);
-    ctx.stroke();
-  }
-  for (let r = 1; r < ROWS; r++) {
-    ctx.beginPath();
-    ctx.moveTo(0, r * BLOCK);
-    ctx.lineTo(COLS * BLOCK, r * BLOCK);
-    ctx.stroke();
-  }
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawGrid();
-
-  // board
-  for (let r = 0; r < ROWS; r++)
-    for (let c = 0; c < COLS; c++)
-      drawBlock(ctx, c, r, board[r][c], BLOCK);
-
-  // ghost
-  const gy = ghostY();
-  for (let r = 0; r < current.shape.length; r++)
-    for (let c = 0; c < current.shape[r].length; c++)
-      if (current.shape[r][c])
-        drawBlock(ctx, current.x + c, gy + r, current.shape[r][c], BLOCK, 0.2);
-
-  // current piece
-  for (let r = 0; r < current.shape.length; r++)
-    for (let c = 0; c < current.shape[r].length; c++)
-      drawBlock(ctx, current.x + c, current.y + r, current.shape[r][c], BLOCK);
-}
-
-function drawNext() {
-  const NB = 30;
-  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-  const shape = next.shape;
-  const offX = Math.floor((4 - shape[0].length) / 2);
-  const offY = Math.floor((4 - shape.length) / 2);
-  for (let r = 0; r < shape.length; r++)
-    for (let c = 0; c < shape[r].length; c++)
-      drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
-}
-
-function endGame() {
-  gameOver = true;
-  cancelAnimationFrame(animId);
-  overlayTitle.textContent = 'GAME OVER';
-  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
-  overlay.classList.remove('hidden');
-}
-
-function togglePause() {
-  if (gameOver) return;
-  paused = !paused;
-  if (!paused) {
-    lastTime = performance.now();
-    loop(lastTime);
-  } else {
-    cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
-  }
-}
-
-function loop(ts) {
-  if (gameOver || paused) return;
-  const dt = ts - lastTime;
-  lastTime = ts;
-  dropAccum += dt;
-  if (dropAccum >= dropInterval) {
-    dropAccum = 0;
-    if (!collide(current.shape, current.x, current.y + 1)) {
-      current.y++;
-    } else {
-      lockPiece();
-      if (gameOver) return;
-    }
-  }
-  draw();
-  animId = requestAnimationFrame(loop);
-}
-
-function init() {
-  board = createBoard();
-  score = 0;
-  lines = 0;
-  level = 1;
-  paused = false;
-  gameOver = false;
-  pendingPieces = [];
-  dropInterval = 1000;
-  dropAccum = 0;
-  lastTime = performance.now();
-  next = randomPiece();
-  spawn();
-  updateHUD();
-  overlay.classList.add('hidden');
-  cancelAnimationFrame(animId);
-  animId = requestAnimationFrame(loop);
-}
-
-document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
-  if (paused || gameOver) return;
-  switch (e.code) {
-    case 'ArrowLeft':
-      if (!collide(current.shape, current.x - 1, current.y)) current.x--;
-      break;
-    case 'ArrowRight':
-      if (!collide(current.shape, current.x + 1, current.y)) current.x++;
-      break;
-    case 'ArrowDown':
-      softDrop();
-      break;
-    case 'ArrowUp':
-    case 'KeyX':
-      tryRotate();
-      break;
-    case 'Space':
-      e.preventDefault();
-      hardDrop();
-      break;
-  }
-  updateHUD();
-});
-
-restartBtn.addEventListener('click', init);
-
-// --- Responsive scaling ---
-const wrapper = document.querySelector('.wrapper');
-const NATURAL_W = 480; // board(300) + gap(20) + panel(160)
-const NATURAL_H = 680; // header(~50) + gap(16) + board(600) + buffer
-
-function resizeGame() {
-  const isMobile = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-  const touchH = isMobile ? 116 : 0;
-  document.body.style.paddingBottom = touchH ? touchH + 'px' : '';
-  const scale = Math.min(1,
-    window.innerWidth / NATURAL_W,
-    (window.innerHeight - touchH) / NATURAL_H
+  // Corazones flotando suaves
+  if (frame % 60 === 0) spawnHeart();
+  if (blownOut && frame % 20 === 0) spawnHeart(
+    fx.width * 0.2 + Math.random() * fx.width * 0.6,
+    fx.height * 0.5 + Math.random() * fx.height * 0.4,
+    false
   );
-  wrapper.style.zoom = scale;
+
+  // Globos
+  if (frame % 90 === 0 && balloons.length < 12) spawnBalloon();
+
+  // Fuegos artificiales
+  const rocketInterval = blownOut ? 35 : 90;
+  if (frame % rocketInterval === 0) launchRocket();
+
+  // Ticks
+  tickConfetti();
+  tickHearts();
+  tickBalloons();
+  tickRockets();
+  tickSparkles();
+
+  // Dibujo (fondo al frente)
+  drawBalloons();
+  drawHearts();
+  drawConfetti();
+  drawRockets();
+  drawSparkles();
+
+  requestAnimationFrame(loop);
 }
 
-window.addEventListener('resize', resizeGame);
-window.addEventListener('orientationchange', () => setTimeout(resizeGame, 150));
-resizeGame();
+loop();
 
-// --- Touch button helpers ---
-function holdBtn(id, action) {
-  const btn = document.getElementById(id);
-  if (!btn) return;
-  let timer = null;
-  btn.addEventListener('pointerdown', e => { e.preventDefault(); action(); timer = setInterval(action, 130); });
-  const stop = () => clearInterval(timer);
-  btn.addEventListener('pointerup', stop);
-  btn.addEventListener('pointercancel', stop);
-  btn.addEventListener('pointerleave', stop);
-}
+/* ============================================================
+   INTERACCIÓN — Soplar velas
+   ============================================================ */
+const blowBtn    = document.getElementById('blow-btn');
+const dedicatoria = document.getElementById('dedicatoria');
+const flames     = document.querySelectorAll('.flame');
+const candles    = document.querySelectorAll('.candle');
+const cakeMouth  = document.getElementById('cake-mouth');
+const eyeLeft    = document.getElementById('eye-left');
+const eyeRight   = document.getElementById('eye-right');
 
-function tapBtn(id, action) {
-  const btn = document.getElementById(id);
-  if (btn) btn.addEventListener('pointerdown', e => { e.preventDefault(); action(); });
-}
+blowBtn.addEventListener('click', () => {
+  if (blownOut) return;
+  blownOut = true;
 
-holdBtn('btn-left',  () => { if (paused || gameOver) return; if (!collide(current.shape, current.x - 1, current.y)) { current.x--; updateHUD(); } });
-holdBtn('btn-right', () => { if (paused || gameOver) return; if (!collide(current.shape, current.x + 1, current.y)) { current.x++; updateHUD(); } });
-holdBtn('btn-down',  () => { if (paused || gameOver) return; softDrop(); });
-tapBtn('btn-rotate', () => { if (paused || gameOver) return; tryRotate(); updateHUD(); });
-tapBtn('btn-drop',   () => { if (paused || gameOver) return; hardDrop(); updateHUD(); });
-tapBtn('btn-pause',  () => togglePause());
+  // Apagar llamas una a una
+  flames.forEach((f, i) => {
+    setTimeout(() => {
+      f.classList.add('out');
+      candles[i].classList.add('blown');
+    }, i * 120);
+  });
 
-// --- Swipe gestures on canvas ---
-let swipeX = 0, swipeY = 0;
+  // Cambiar carita a enamorada
+  setTimeout(() => {
+    cakeMouth.classList.add('love');
+    eyeLeft.textContent  = '🩷';
+    eyeRight.textContent = '🩷';
+    eyeLeft.style.fontSize  = '11px';
+    eyeRight.style.fontSize = '11px';
+    eyeLeft.style.background  = 'none';
+    eyeRight.style.background = 'none';
+    eyeLeft.style.borderRadius  = '0';
+    eyeRight.style.borderRadius = '0';
+  }, 700);
 
-canvas.addEventListener('touchstart', e => {
-  swipeX = e.touches[0].clientX;
-  swipeY = e.touches[0].clientY;
-}, { passive: true });
+  // Ráfaga de corazones
+  setTimeout(() => {
+    const cx = fx.width / 2;
+    const cy = fx.height / 2;
+    for (let i = 0; i < 3; i++) {
+      setTimeout(() => spawnHeart(cx + (Math.random()-0.5)*200, cy + (Math.random()-0.5)*200, true), i * 200);
+    }
+  }, 600);
 
-canvas.addEventListener('touchend', e => {
-  if (paused || gameOver) return;
-  const dx = e.changedTouches[0].clientX - swipeX;
-  const dy = e.changedTouches[0].clientY - swipeY;
-  const adx = Math.abs(dx), ady = Math.abs(dy);
-  if (adx < 10 && ady < 10) {
-    tryRotate();
-  } else if (adx > ady) {
-    if (dx > 0) { if (!collide(current.shape, current.x + 1, current.y)) current.x++; }
-    else        { if (!collide(current.shape, current.x - 1, current.y)) current.x--; }
-  } else {
-    if (dy > 0) softDrop();
-    else hardDrop();
-  }
-  updateHUD();
-}, { passive: true });
+  // Fuegos artificiales extra
+  setTimeout(() => {
+    for (let i = 0; i < 5; i++) setTimeout(launchRocket, i * 180);
+  }, 400);
 
-init();
+  // Mostrar dedicatoria
+  setTimeout(() => {
+    dedicatoria.classList.add('show');
+  }, 1200);
+
+  // Ocultar botón
+  blowBtn.classList.add('hidden');
+});

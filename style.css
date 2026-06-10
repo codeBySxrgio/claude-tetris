@@ -4,334 +4,414 @@
   padding: 0;
 }
 
-/* ---- Theme variables ---- */
-:root {
-  --bg:            #0f0f17;
-  --text:          #e0e0e0;
-  --canvas-bg:     #1a1a25;
-  --canvas-border: #2a2a3a;
-  --label:         #555570;
-  --value:         #7aa2f7;
-  --ctrl-text:     #888888;
-  --kbd-bg:        #22223a;
-  --kbd-border:    #3a3a5a;
-  --kbd-text:      #aaaaaa;
-  --grid:          #22222e;
-  --overlay-bg:    rgba(10,10,20,0.75);
-  --overlay-title: #e57373;
-  --btn-bg:        #7aa2f7;
-  --btn-text:      #0f0f17;
-  --btn-hover:     #9bbdff;
-  --logo-color:    #7aa2f7;
-  --logo-shadow:   rgba(122,162,247,0.4);
-  --toggle-track:  #22223a;
-  --toggle-thumb:  #7aa2f7;
-}
-
-[data-theme="light"] {
-  --bg:            #eef0f8;
-  --text:          #1a1a2e;
-  --canvas-bg:     #ffffff;
-  --canvas-border: #c8ccde;
-  --label:         #8888aa;
-  --value:         #3a5cc0;
-  --ctrl-text:     #666680;
-  --kbd-bg:        #e0e4f0;
-  --kbd-border:    #c8ccde;
-  --kbd-text:      #444460;
-  --grid:          #dde0ee;
-  --overlay-bg:    rgba(220,225,245,0.85);
-  --overlay-title: #c62828;
-  --btn-bg:        #3a5cc0;
-  --btn-text:      #ffffff;
-  --btn-hover:     #5274d8;
-  --logo-color:    #3a5cc0;
-  --logo-shadow:   rgba(58,92,192,0.25);
-  --toggle-track:  #c8ccde;
-  --toggle-thumb:  #3a5cc0;
-}
-
+/* ============================================================
+   FONDO
+   ============================================================ */
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: system-ui, -apple-system, sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   min-height: 100vh;
-  user-select: none;
-  transition: background 0.3s, color 0.3s;
+  background: linear-gradient(160deg, #1a0535 0%, #3b0764 30%, #6d1b7b 60%, #c2185b 100%);
+  font-family: 'Georgia', serif;
   overflow-x: hidden;
-}
-
-.wrapper {
+  overflow-y: auto;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-/* ---- Header ---- */
-.game-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0 4px;
-}
-
-.logo {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: 8px;
-  color: var(--logo-color);
-  text-shadow: 0 0 20px var(--logo-shadow);
-  transition: color 0.3s, text-shadow 0.3s;
-}
-
-/* ---- Toggle switch ---- */
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.theme-toggle input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-track {
-  position: relative;
-  width: 44px;
-  height: 24px;
-  background: var(--toggle-track);
-  border-radius: 12px;
-  transition: background 0.3s;
-  flex-shrink: 0;
-}
-
-.toggle-thumb {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
-  background: var(--toggle-thumb);
-  border-radius: 50%;
-  transition: transform 0.3s, background 0.3s;
-}
-
-.theme-toggle input:checked ~ .toggle-track .toggle-thumb {
-  transform: translateX(20px);
-}
-
-.icon-moon,
-.icon-sun {
-  font-size: 15px;
-  line-height: 1;
-  transition: opacity 0.3s;
-}
-
-.icon-moon { opacity: 1; }
-.icon-sun  { opacity: 0.35; }
-
-[data-theme="light"] .icon-moon { opacity: 0.35; }
-[data-theme="light"] .icon-sun  { opacity: 1; }
-
-/* ---- Game area (positions the overlay) ---- */
-.game-area {
-  position: relative;
-}
-
-.game-container {
-  display: flex;
-  gap: 20px;
   align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px 80px;
 }
 
-#board {
-  display: block;
-  border: 1px solid var(--canvas-border);
-  background: var(--canvas-bg);
-  border-radius: 4px;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
-  transition: border-color 0.3s, background 0.3s;
+#fx {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* ---- Panel lateral ---- */
-.panel {
-  width: 160px;
+/* ============================================================
+   ESCENA CENTRAL
+   ============================================================ */
+.scene {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding-top: 4px;
-}
-
-.panel-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.label {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: var(--label);
-  font-weight: 600;
-  transition: color 0.3s;
-}
-
-.value {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--value);
-  letter-spacing: 1px;
-  transition: color 0.3s;
-}
-
-#next-canvas {
-  display: block;
-  border: 1px solid var(--canvas-border);
-  background: var(--canvas-bg);
-  border-radius: 4px;
-  transition: border-color 0.3s, background 0.3s;
-}
-
-/* ---- Controles ---- */
-.controls ul {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.controls li {
-  font-size: 12px;
-  color: var(--ctrl-text);
-  display: flex;
   align-items: center;
-  gap: 4px;
-  transition: color 0.3s;
+  gap: 24px;
+  max-width: 520px;
+  width: 100%;
 }
 
-kbd {
-  background: var(--kbd-bg);
-  border: 1px solid var(--kbd-border);
-  border-radius: 3px;
-  padding: 1px 6px;
-  font-size: 11px;
-  font-family: inherit;
-  color: var(--kbd-text);
-  transition: background 0.3s, border-color 0.3s, color 0.3s;
+/* ============================================================
+   TÍTULO
+   ============================================================ */
+.titulo {
+  font-size: clamp(1.6rem, 5vw, 2.6rem);
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 0 20px rgba(255,150,200,0.8), 0 2px 4px rgba(0,0,0,0.5);
+  animation: titleBounce 0.8s cubic-bezier(.36,.07,.19,.97) both;
+  letter-spacing: 1px;
 }
 
-/* ---- Overlay ---- */
-.overlay {
+.subtitulo {
+  font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+  color: #ffd6f0;
+  text-align: center;
+  text-shadow: 0 0 12px rgba(255,100,180,0.6);
+  animation: fadeUp 1s 0.4s both;
+  letter-spacing: 3px;
+}
+
+@keyframes titleBounce {
+  0%   { transform: scale(0.3) rotate(-5deg); opacity: 0; }
+  60%  { transform: scale(1.1) rotate(2deg); opacity: 1; }
+  80%  { transform: scale(0.95) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   TORTA — WRAPPER
+   ============================================================ */
+.cake-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeUp 1s 0.6s both;
+}
+
+/* ============================================================
+   VELAS
+   ============================================================ */
+.candles-row {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-bottom: 0;
+  transform: translateY(6px);
+}
+
+.candle {
+  position: relative;
+  width: 14px;
+  height: 42px;
+  border-radius: 3px 3px 2px 2px;
+  background: linear-gradient(180deg, #fff8 20%, currentColor 100%);
+}
+.candle:nth-child(1) { color: #ff6b9d; }
+.candle:nth-child(2) { color: #ffd93d; }
+.candle:nth-child(3) { color: #6bcb77; }
+.candle:nth-child(4) { color: #4d96ff; }
+.candle:nth-child(5) { color: #ff6b9d; }
+
+/* Llamita */
+.flame {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 18px;
+  border-radius: 50% 50% 20% 20%;
+  background: radial-gradient(ellipse at 50% 80%, #fff 0%, #ffe082 30%, #ff9800 60%, #e53935 100%);
+  animation: flicker 0.9s ease-in-out infinite alternate;
+  transform-origin: bottom center;
+  filter: blur(0.4px);
+  box-shadow: 0 0 8px 2px rgba(255,180,50,0.7), 0 0 16px 4px rgba(255,100,10,0.4);
+}
+
+.flame-inner {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 10px;
+  border-radius: 50% 50% 20% 20%;
+  background: radial-gradient(ellipse at 50% 80%, #fff 0%, #fffde7 60%, #ffe082 100%);
+  animation: flicker 0.7s 0.1s ease-in-out infinite alternate;
+}
+
+.flame.out {
+  opacity: 0;
+  animation: none;
+  transition: opacity 0.4s;
+}
+/* humito al apagar */
+.candle::after {
+  content: '';
+  position: absolute;
+  bottom: 104%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 0;
+  background: rgba(200,200,200,0.7);
+  border-radius: 2px;
+  transition: height 0.5s, opacity 0.5s;
+  opacity: 0;
+}
+.candle.blown::after {
+  height: 22px;
+  opacity: 0.7;
+  animation: smoke 1.2s 0.3s ease-out forwards;
+}
+
+@keyframes flicker {
+  0%   { transform: translateX(-50%) scaleX(1)   scaleY(1)    rotate(-2deg); }
+  33%  { transform: translateX(-50%) scaleX(0.85) scaleY(1.05) rotate(1deg); }
+  66%  { transform: translateX(-50%) scaleX(1.1)  scaleY(0.95) rotate(-1deg); }
+  100% { transform: translateX(-50%) scaleX(0.9)  scaleY(1.08) rotate(2deg); }
+}
+
+@keyframes smoke {
+  0%   { transform: translateX(-50%) translateY(0) scaleX(1); opacity: 0.7; }
+  100% { transform: translateX(-50%) translateY(-30px) scaleX(3); opacity: 0; }
+}
+
+/* ============================================================
+   TORTA — CAPAS
+   ============================================================ */
+.cake {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  filter: drop-shadow(0 12px 32px rgba(0,0,0,0.5));
+}
+
+.layer {
+  position: relative;
+  border-radius: 8px;
+  overflow: visible;
+}
+
+.layer-top {
+  width: clamp(180px, 45vw, 220px);
+  height: clamp(60px, 15vw, 80px);
+  background: linear-gradient(180deg, #f8bbd0 0%, #e91e8c 100%);
+  border: 2px solid #c2185b;
+  z-index: 3;
+}
+
+.layer-mid {
+  width: clamp(210px, 52vw, 260px);
+  height: clamp(55px, 14vw, 72px);
+  background: linear-gradient(180deg, #ffe0b2 0%, #ff9800 100%);
+  border: 2px solid #e65100;
+  z-index: 2;
+  margin-top: -3px;
+}
+
+.layer-bot {
+  width: clamp(240px, 60vw, 300px);
+  height: clamp(60px, 16vw, 80px);
+  background: linear-gradient(180deg, #f3e5f5 0%, #9c27b0 100%);
+  border: 2px solid #6a1b9a;
+  z-index: 1;
+  margin-top: -3px;
+  border-radius: 8px 8px 14px 14px;
+}
+
+/* Glaseado chorreando en la capa superior */
+.frosting-drip {
+  position: absolute;
+  top: -6px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: #fff;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 16'%3E%3Cpath d='M0,0 Q20,14 40,2 Q60,14 80,2 Q100,14 120,2 Q140,14 160,2 Q180,14 200,2 Q210,10 220,0 Z' fill='white'/%3E%3C/svg%3E");
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 16'%3E%3Cpath d='M0,0 Q20,14 40,2 Q60,14 80,2 Q100,14 120,2 Q140,14 160,2 Q180,14 200,2 Q210,10 220,0 Z' fill='white'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+}
+
+/* ============================================================
+   CARITA EN LA TORTA
+   ============================================================ */
+.face {
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--overlay-bg);
-  backdrop-filter: blur(4px);
-  border-radius: 4px;
-  transition: background 0.3s;
+  gap: 4px;
 }
 
-.overlay.hidden {
-  display: none;
-}
-
-.overlay-box {
-  text-align: center;
+.eyes {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: center;
+  gap: 22px;
+  margin-top: 4px;
 }
 
-#overlay-title {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: 4px;
-  color: var(--overlay-title);
-  transition: color 0.3s;
+.eye {
+  width: 9px;
+  height: 9px;
+  background: #3e0a2a;
+  border-radius: 50%;
+  position: relative;
+  animation: blink 4s 2s infinite;
 }
 
-#overlay-score {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
-  color: var(--value);
-  transition: color 0.3s;
+.eye::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 3px;
+  height: 3px;
+  background: #fff;
+  border-radius: 50%;
 }
 
-#restart-btn {
-  margin-top: 8px;
-  background: var(--btn-bg);
-  color: var(--btn-text);
+@keyframes blink {
+  0%,95%,100% { transform: scaleY(1); }
+  97%          { transform: scaleY(0.1); }
+}
+
+.mouth {
+  width: 26px;
+  height: 13px;
+  border: 3px solid #3e0a2a;
+  border-top: none;
+  border-radius: 0 0 30px 30px;
+  margin-top: 2px;
+  transition: all 0.5s;
+}
+
+/* Carita enamorada al soplar */
+.mouth.love {
+  width: 30px;
+  height: 16px;
+  border-radius: 0 0 40px 40px;
+}
+
+.cheek {
+  position: absolute;
+  width: 14px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,100,130,0.5);
+  top: 52%;
+}
+.cheek-left  { left: 12%; }
+.cheek-right { right: 12%; }
+
+/* ============================================================
+   SPRINKLES
+   ============================================================ */
+.sprinkles { position: absolute; inset: 0; pointer-events: none; }
+
+.sp {
+  position: absolute;
+  left: var(--tx);
+  top: var(--ty);
+  width: 6px;
+  height: 3px;
+  border-radius: 2px;
+  transform: rotate(var(--r));
+  opacity: 0.9;
+}
+
+/* ============================================================
+   BOTÓN SOPLAR
+   ============================================================ */
+#blow-btn {
+  padding: 14px 36px;
+  font-size: clamp(1rem, 3.5vw, 1.2rem);
+  font-family: inherit;
+  background: linear-gradient(135deg, #ff4da6, #ff9a00);
+  color: #fff;
   border: none;
-  border-radius: 6px;
-  padding: 10px 28px;
-  font-size: 14px;
-  font-weight: 700;
+  border-radius: 50px;
   cursor: pointer;
   letter-spacing: 1px;
-  transition: background 0.15s, color 0.3s;
+  box-shadow: 0 6px 24px rgba(255,77,166,0.5), 0 0 0 0 rgba(255,77,166,0.4);
+  animation: pulse 2s infinite;
+  transition: transform 0.15s, box-shadow 0.15s;
+  font-weight: 700;
 }
 
-#restart-btn:hover {
-  background: var(--btn-hover);
+#blow-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 32px rgba(255,77,166,0.7);
 }
 
-/* ---- Touch controls (mobile) ---- */
-.touch-controls {
+#blow-btn:active {
+  transform: scale(0.97);
+}
+
+#blow-btn.hidden {
   display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 10px 16px 14px;
-  background: var(--bg);
-  border-top: 1px solid var(--canvas-border);
-  z-index: 100;
-  transition: background 0.3s, border-color 0.3s;
 }
 
-@media (hover: none) and (pointer: coarse) {
-  .touch-controls {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 8px;
-    max-width: 400px;
-    margin: 0 auto;
-  }
+@keyframes pulse {
+  0%,100% { box-shadow: 0 6px 24px rgba(255,77,166,0.5), 0 0 0 0 rgba(255,77,166,0.4); }
+  50%      { box-shadow: 0 6px 24px rgba(255,77,166,0.5), 0 0 0 12px rgba(255,77,166,0); }
 }
 
-.touch-btn {
-  background: var(--kbd-bg);
-  border: 1px solid var(--kbd-border);
-  border-radius: 10px;
-  color: var(--kbd-text);
-  font-size: 22px;
-  padding: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 48px;
-  transition: background 0.1s, color 0.1s, border-color 0.3s;
+/* ============================================================
+   DEDICATORIA
+   ============================================================ */
+#dedicatoria {
+  width: 100%;
+  max-width: 480px;
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+  transition: opacity 0.8s, transform 0.8s;
+  pointer-events: none;
 }
 
-.touch-btn:active {
-  background: var(--toggle-thumb);
-  color: var(--btn-text);
+#dedicatoria.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.carta-inner {
+  background: linear-gradient(135deg, #fff9fb 0%, #ffe4f0 100%);
+  border: 2px solid #f48fb1;
+  border-radius: 20px;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 8px 48px rgba(244,143,177,0.4), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.carta-emoji {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 12px;
+  animation: heartbeat 1.2s infinite;
+}
+
+@keyframes heartbeat {
+  0%,100% { transform: scale(1); }
+  20%     { transform: scale(1.2); }
+  40%     { transform: scale(1); }
+  60%     { transform: scale(1.1); }
+}
+
+.carta-texto {
+  font-size: clamp(0.9rem, 2.8vw, 1rem);
+  color: #4a0e2e;
+  line-height: 1.75;
+  text-align: left;
+}
+
+.carta-firma {
+  margin-top: 20px;
+  font-style: italic;
+  font-size: clamp(0.95rem, 3vw, 1.05rem);
+  color: #c2185b;
+  font-weight: 700;
+  text-align: right;
 }
